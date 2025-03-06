@@ -170,7 +170,6 @@ def generator(names, location_names, placement_location_names, room_names, objec
                     img = qr.make_image(fill_color="black", back_color="white")
                     # Create a drawing object
                     draw = ImageDraw.Draw(img)
-                    
 
                     fontsize = 30
                     # Load a font
@@ -181,8 +180,6 @@ def generator(names, location_names, placement_location_names, room_names, objec
 
                         max = int((img.size[0] / (draw.textlength("W", font) + 1)))
                         print(f'Page:{img.size[0]} W={draw.textlength("W", font)}')
-
-                        c = "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
 
                         if len(c) > max:
                             split = [c[i:i+max] for i in range(0, len(c), max)]
