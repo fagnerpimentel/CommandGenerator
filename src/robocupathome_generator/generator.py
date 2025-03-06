@@ -93,6 +93,8 @@ user_prompt = """
 'q': Quit"
 """
 
+reroll_prompt = "insert number to reroll, 'r' to regenerate all"
+
 def generator(names, location_names, placement_location_names, room_names, object_names, object_categories_plural, object_categories_singular):
     generator = CommandGenerator(names, location_names, placement_location_names, room_names, object_names,
                                  object_categories_plural, object_categories_singular)
@@ -136,10 +138,23 @@ def generator(names, location_names, placement_location_names, room_names, objec
                 num = int(input())
                 print("\n")
                 commands = egpsr_generator.generate_setup(num)
-                command = ""
-                for i, task in enumerate(commands):
-                    command += f"{i}.) {task.task}\n" 
                 last_input = "5"
+                while user_input != "q":
+                    command = ""
+                    for i, task in enumerate(commands):
+                        command += f"{i}.) {task.task}\n"
+                    print(command)
+                    print(reroll_prompt)
+                    user_input = input()
+                    if user_input.isdigit():
+                        n = int(user_input)
+                        if n < len(commands):
+                            commands = egpsr_generator.regenerate(commands, n)
+                    elif user_input == 'r':
+                        commands = egpsr_generator.generate_setup(num)
+                    else:
+                        break
+
             elif user_input == 'q':
                 break
             elif user_input == '0':
