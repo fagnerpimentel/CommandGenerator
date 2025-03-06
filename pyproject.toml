@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta" 
+
+[project]
+name = "robocupathome_generator"
+version = "0.0.0"
+
+dependencies = ["qrcode", "pillow"]
+
+[project.scripts]
+athome-generator = "robocupathome_generator.generator:main"

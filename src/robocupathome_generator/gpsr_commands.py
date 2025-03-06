@@ -238,6 +238,11 @@ class CommandGenerator:
             warnings.warn("Command type not covered: " + command)
             return "WARNING"
         return command_string
+    
+    def insert_all_placeholders(self, string):
+        for ph in re.findall(r'(\{\w+\})', string, re.DOTALL):
+            string = string.replace(ph, self.insert_placeholders(ph))
+        return string
 
     def insert_placeholders(self, ph):
         ph = ph.replace('{', '').replace('}', '')

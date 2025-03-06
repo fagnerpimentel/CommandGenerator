@@ -1,10 +1,14 @@
 import random
 import re
 import warnings
+import os
+
+import argparse
 import qrcode
+
 from PIL import Image, ImageDraw, ImageFont
-from gpsr_commands import CommandGenerator
-from egpsr_commands import EgpsrCommandGenerator
+from robocupathome_generator.gpsr_commands import CommandGenerator
+from robocupathome_generator.egpsr_commands import EgpsrCommandGenerator
 
 
 def read_data(file_path):
@@ -73,35 +77,27 @@ def parse_objects(data):
         warnings.warn("List of objects or object categories is empty. Check content of object markdown file")
         return []
 
+def dir_path(path):
+    if os.path.isdir(path):
+        return path
+    else:
+        raise argparse.ArgumentTypeError(f"'{path}' is not a valid path")
+    
+user_prompt = """
+'1': Any command
+'2': Command without manipulation
+'3': Command with manipulation
+'4': Batch of three commands
+'5': Generate EGPSR setup
+'0': Generate QR code
+'q': Quit"
+"""
 
-if __name__ == "__main__":
-    names_file_path = '../names/names.md'
-    locations_file_path = '../maps/location_names.md'
-    rooms_file_path = '../maps/room_names.md'
-    objects_file_path = '../objects/objects.md'
-
-    names_data = read_data(names_file_path)
-    names = parse_names(names_data)
-
-    locations_data = read_data(locations_file_path)
-    location_names, placement_location_names = parse_locations(locations_data)
-
-    rooms_data = read_data(rooms_file_path)
-    room_names = parse_rooms(rooms_data)
-
-    objects_data = read_data(objects_file_path)
-    object_names, object_categories_plural, object_categories_singular = parse_objects(objects_data)
-
+def generator(names, location_names, placement_location_names, room_names, object_names, object_categories_plural, object_categories_singular):
     generator = CommandGenerator(names, location_names, placement_location_names, room_names, object_names,
                                  object_categories_plural, object_categories_singular)
     egpsr_generator = EgpsrCommandGenerator(generator)
-    user_prompt = "'1': Any command,\n" \
-                  "'2': Command without manipulation,\n" \
-                  "'3': Command with manipulation,\n" \
-                  "'4': Batch of three commands,\n" \
-                  "'5': Generate EGPSR setup,\n" \
-                  "'0': Generate QR code,\n" \
-                  "'q': Quit"
+    
     print(user_prompt)
     command = ""
     qr = qrcode.QRCode(
@@ -136,7 +132,13 @@ if __name__ == "__main__":
                 command = command_list[0] + "\n" + command_list[1] + "\n" + command_list[2]
                 last_input = "4"
             elif user_input == "5":
-                command = egpsr_generator.generate_setup()
+                print("how many non person tasks should be created?")
+                num = int(input())
+                print("\n")
+                commands = egpsr_generator.generate_setup(num)
+                command = ""
+                for i, task in enumerate(commands):
+                    command += f"{i}.) {task.task}\n" 
                 last_input = "5"
             elif user_input == 'q':
                 break
@@ -153,19 +155,35 @@ if __name__ == "__main__":
                     img = qr.make_image(fill_color="black", back_color="white")
                     # Create a drawing object
                     draw = ImageDraw.Draw(img)
+                    
 
+                    fontsize = 30
                     # Load a font
-                    font = ImageFont.truetype("Arial.ttf", 30)
+                    while True:
+                        font = ImageFont.load_default(fontsize)
 
-                    # Calculate text size and position
-                    _, _, text_width, text_height = draw.textbbox((0, 0), c, font=font)
-                    if text_width > img.size[0]:
-                        font = ImageFont.truetype("Arial.ttf", 15)
-                        _, _, text_width, text_height = draw.textbbox((0, 0), c, font=font)
-                    text_position = ((img.size[0] - text_width) // 2, img.size[1] - text_height - 10)
+                        print(draw.textlength("W", font))
+
+                        max = int((img.size[0] / (draw.textlength("W", font) + 1)))
+                        print(f'Page:{img.size[0]} W={draw.textlength("W", font)}')
+
+                        c = "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+
+                        if len(c) > max:
+                            split = [c[i:i+max] for i in range(0, len(c), max)]
+
+                            if len(split) < 4:
+                                c = '\n'.join(split)
+                                break  
+                            else:
+                                fontsize -= 4
+                        else:
+                            break    
+
+                   
 
                     # Draw text on the image
-                    draw.text(text_position, c, font=font, fill="black")
+                    draw.multiline_text((img.size[0]/2, img.size[1] ), c, font=font, fill="black", anchor="md")
                     img.show()
             else:
                 print(user_prompt)
@@ -176,9 +194,53 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("KeyboardInterrupt. Exiting the loop.")
 
+
+def print_config(names, location_names, placement_location_names, room_names, object_names, object_categories_plural, object_categories_singular):
+    print(f'Names: \n{names}')
+    print(f'Locations: \n{location_names}')
+    print(f'Locations (p): \n{placement_location_names}')
+    print(f'Rooms: \n{room_names}')
+    print(f'Objects: \n{object_names}')
+    print(f'Categories: \n{list(zip(object_categories_singular,object_categories_plural))}')
+
+
+def main():
+    parser = argparse.ArgumentParser(
+                    prog='athome-generator',
+                    description='Generate Commands for Robocup@Home',
+                    epilog='')
+    parser.add_argument('-d', '--data-dir', default=".", help='directory where the data is read from', type=dir_path)
+    parser.add_argument('-p', '--print-config', action='store_true', help='print parsed data and exit')
+
+    args = parser.parse_args()
+
+    names_file_path = f'{args.data_dir}/names/names.md'
+    locations_file_path = f'{args.data_dir}/maps/location_names.md'
+    rooms_file_path = f'{args.data_dir}/maps/room_names.md'
+    objects_file_path = f'{args.data_dir}/objects/objects.md'
+
+    names_data = read_data(names_file_path)
+    names = parse_names(names_data)
+
+    locations_data = read_data(locations_file_path)
+    location_names, placement_location_names = parse_locations(locations_data)
+
+    rooms_data = read_data(rooms_file_path)
+    room_names = parse_rooms(rooms_data)
+
+    objects_data = read_data(objects_file_path)
+    object_names, object_categories_plural, object_categories_singular = parse_objects(objects_data)
+
+    if args.print_config:
+        print_config(names, location_names, placement_location_names, room_names, object_names, object_categories_plural, object_categories_singular)
+    else:
+        generator(names, location_names, placement_location_names, room_names, object_names, object_categories_plural, object_categories_singular)
+
+
     # for _ in range(500):  # Generate 50 random commands
     #     generator = CommandGenerator(names, location_names, placement_location_names, room_names, object_names,
     #                                  object_categories_plural, object_categories_singular)
     #     command = generator.generate_command_start(cmd_category="")
     #     command = command[0].upper() + command[1:]
     #     print(command)
+
