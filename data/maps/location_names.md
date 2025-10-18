@@ -4,11 +4,9 @@ a## Locations
 | 1 | bed (p) |
 | 3 | shelf (p) | cleaning supplies |
 | 4 | trashbin |
-| 5 | dishwasher (p) |
-| 7 | kitchen table (p) | dishes |
+| 7 | kitchen table (p) |
 | 8 | office chair |
-| 9 | pantry (p) | food |
-| 10 | refrigerator (p) |
+| 9 | pantry (p) | pantry itens |
 | 11 | sink (p) |
 | 12 | oficce cabinet (p) | drinks |
 | 13 | coatrack |
